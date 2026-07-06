@@ -1,16 +1,49 @@
-# React + Vite
+# Vizu
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+3D audio visualizer. Bars go up, album art spins, colors change. You know the drill.
 
-Currently, two official plugins are available:
+Built with React, Three.js (R3F), Web Audio API, and Tailwind. Runs in a browser. Records OK on a potato.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+- Drop an audio file, a background image, and an album art
+- Bars form a ring around the album art and react to the music
+- You can change bar colors, glow intensity, background brightness, album brightness
+- Import a whole folder of songs and it'll auto-advance like a playlist
+- PiP mode so you can put it in a tiny window and pretend to work
+- Hide the UI with a 3-second fade for clean screen recording
+- Spacebar toggles play/pause because reaching for the mouse is too much effort
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Install
 
-## Expanding the ESLint configuration
+```bash
+npm install
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Run
+
+```bash
+npm run dev
+```
+
+## Build
+
+```bash
+npm run build
+```
+
+## Stack
+
+- Vite + React
+- @react-three/fiber + @react-three/drei for the 3D stuff
+- @react-three/postprocessing for the glow (bloom)
+- Web Audio API (AnalyserNode) for frequency data
+- Tailwind CSS for the UI panel
+
+## Why
+
+Wanted a Trap Nation style visualizer. Found a bunch of tutorials (not really) that either cost money (also, not really) or looked like they were made in 2012. Made this instead.
+
+## License
+
+MIT
