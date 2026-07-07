@@ -69,7 +69,7 @@ function Album({ url, playing, brightness }) {
   )
 }
 
-function Ring({ analyserRef, freqDataRef, playing, color, intensity, rainbowMode }) {
+function Ring({ analyserRef, freqDataRef, playing, color, intensity, colorMode, colorMap, pulse }) {
   const ref = useRef()
   const curH = useRef(new Float32Array(N))
   const m4 = useMemo(() => new THREE.Matrix4(), [])
@@ -122,9 +122,12 @@ function Ring({ analyserRef, freqDataRef, playing, color, intensity, rainbowMode
       m4.compose(p, q, s)
       m.setMatrixAt(i, m4)
 
-      if (rainbowMode) {
-        const hue = ((i / N) + time * 0.04) % 1
+      if (colorMode === 'rainbow') {
+        const hue = pulse ? ((i / N) + time * 0.04) % 1 : (i / N) % 1
         tmpC.setHSL(hue, 0.9, 0.5 + (h / MAX_BAR) * 0.3)
+      } else if (colorMode === 'auto' && colorMap?.length === N) {
+        const idx = pulse ? (i + Math.floor(time * 25)) % N : i
+        tmpC.set(colorMap[idx])
       } else {
         tmpC.set(color)
       }
@@ -145,14 +148,16 @@ function Ring({ analyserRef, freqDataRef, playing, color, intensity, rainbowMode
   )
 }
 
-function GlowRing({ color, intensity, rainbowMode }) {
+function GlowRing({ color, intensity, colorMode, colorMap, pulse }) {
   const ref = useRef()
   const tmpC = useMemo(() => new THREE.Color(), [])
 
   useLayoutEffect(() => {
     if (!ref.current) return
-    if (rainbowMode) {
+    if (colorMode === 'rainbow') {
       tmpC.setHSL(0, 0.9, 0.5)
+    } else if (colorMode === 'auto' && colorMap?.length) {
+      tmpC.set(colorMap[0])
     } else {
       tmpC.set(color)
     }
@@ -160,7 +165,7 @@ function GlowRing({ color, intensity, rainbowMode }) {
     tmpC.g *= intensity
     tmpC.b *= intensity
     ref.current.material.color.copy(tmpC)
-  }, [color, intensity, rainbowMode])
+  }, [color, intensity, colorMode, colorMap])
 
   return (
     <mesh ref={ref} position={[0, 0, 0.1]}>
@@ -170,13 +175,13 @@ function GlowRing({ color, intensity, rainbowMode }) {
   )
 }
 
-function Scene({ bgUrl, albumUrl, analyserRef, freqDataRef, playing, bgBrightness, bgFit, eqColor, eqIntensity, albumBrightness, rainbowMode }) {
+function Scene({ bgUrl, albumUrl, analyserRef, freqDataRef, playing, bgBrightness, bgFit, eqColor, eqIntensity, albumBrightness, colorMode, colorMap, pulse }) {
   return (
     <>
       {bgUrl && <Bg url={bgUrl} brightness={bgBrightness} fit={bgFit} />}
-      <GlowRing color={eqColor} intensity={eqIntensity} rainbowMode={rainbowMode} />
+      <GlowRing color={eqColor} intensity={eqIntensity} colorMode={colorMode} colorMap={colorMap} pulse={pulse} />
       {albumUrl && <Album url={albumUrl} playing={playing} brightness={albumBrightness} />}
-      <Ring analyserRef={analyserRef} freqDataRef={freqDataRef} playing={playing} color={eqColor} intensity={eqIntensity} rainbowMode={rainbowMode} />
+      <Ring analyserRef={analyserRef} freqDataRef={freqDataRef} playing={playing} color={eqColor} intensity={eqIntensity} colorMode={colorMode} colorMap={colorMap} pulse={pulse} />
       <EffectComposer>
         <Bloom intensity={2.0} luminanceThreshold={0} luminanceSmoothing={0.1} mipmapBlur />
       </EffectComposer>
@@ -184,7 +189,7 @@ function Scene({ bgUrl, albumUrl, analyserRef, freqDataRef, playing, bgBrightnes
   )
 }
 
-export default function VisualizerCanvas({ bgUrl, albumUrl, analyserRef, freqDataRef, playing, bgBrightness, bgFit, eqColor, eqIntensity, albumBrightness, rainbowMode, onCanvasReady }) {
+export default function VisualizerCanvas({ bgUrl, albumUrl, analyserRef, freqDataRef, playing, bgBrightness, bgFit, eqColor, eqIntensity, albumBrightness, colorMode, colorMap, palette, pulse, onCanvasReady }) {
   return (
     <Canvas
       onCreated={(state) => onCanvasReady?.(state.gl.domElement)}
@@ -192,7 +197,7 @@ export default function VisualizerCanvas({ bgUrl, albumUrl, analyserRef, freqDat
       style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0 }}
     >
       <Suspense fallback={null}>
-        <Scene bgUrl={bgUrl} albumUrl={albumUrl} analyserRef={analyserRef} freqDataRef={freqDataRef} playing={playing} bgBrightness={bgBrightness} bgFit={bgFit} eqColor={eqColor} eqIntensity={eqIntensity} albumBrightness={albumBrightness} rainbowMode={rainbowMode} />
+        <Scene bgUrl={bgUrl} albumUrl={albumUrl} analyserRef={analyserRef} freqDataRef={freqDataRef} playing={playing} bgBrightness={bgBrightness} bgFit={bgFit} eqColor={eqColor} eqIntensity={eqIntensity} albumBrightness={albumBrightness} colorMode={colorMode} colorMap={colorMap} pulse={pulse} />
       </Suspense>
     </Canvas>
   )

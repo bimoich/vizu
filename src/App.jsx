@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import VisualizerCanvas from './components/VisualizerCanvas'
 import ControlPanel from './components/ControlPanel'
 import useAudioAnalyzer from './hooks/useAudioAnalyzer'
+import { extractPalette, buildColorMap } from './utils/colorExtract'
 
 export default function App() {
   const [audioFile, setAudioFile] = useState(null)
@@ -14,7 +15,13 @@ export default function App() {
   const [eqIntensity, setEqIntensity] = useState(1.2)
   const [albumBrightness, setAlbumBrightness] = useState(1.0)
   const [volume, setVolume] = useState(0.8)
-  const [rainbowMode, setRainbowMode] = useState(false)
+  const [colorMode, setColorMode] = useState('manual')
+  const [palette, setPalette] = useState([])
+  const [pulse, setPulse] = useState(true)
+
+  const colorMap = useMemo(() =>
+    colorMode === 'auto' && palette.length ? buildColorMap(palette, 256) : []
+  , [colorMode, palette])
 
   // playlist
   const [playlistFiles, setPlaylistFiles] = useState(null)
@@ -39,6 +46,22 @@ export default function App() {
     playlistFiles ? playlistFiles.map(f => f.name.replace(/\.[^/.]+$/, '')) : []
   , [playlistFiles])
   const pipSupported = useMemo(() => 'requestPictureInPicture' in HTMLVideoElement.prototype, [])
+
+  // extract palette when album art changes
+  useEffect(() => {
+    if (albumUrl) {
+      extractPalette(albumUrl, 6).then(setPalette)
+    } else {
+      setPalette([])
+    }
+  }, [albumUrl])
+
+  // fallback to manual when no palette for auto mode
+  useEffect(() => {
+    if (colorMode === 'auto' && !palette.length && !albumUrl) {
+      setColorMode('manual')
+    }
+  }, [colorMode, palette, albumUrl])
 
   const handleHide = useCallback(() => {
     setUiPhase('show-btn')
@@ -171,7 +194,10 @@ export default function App() {
         eqColor={eqColor}
         eqIntensity={eqIntensity}
         albumBrightness={albumBrightness}
-        rainbowMode={rainbowMode}
+        colorMode={colorMode}
+        colorMap={colorMap}
+        palette={palette}
+        pulse={pulse}
         onCanvasReady={(c) => { canvasRef.current = c }}
       />
 
@@ -194,7 +220,9 @@ export default function App() {
             onPiP={handlePiP}
             inPiP={inPiP}
             pipSupported={pipSupported}
-            rainbowMode={rainbowMode} setRainbowMode={setRainbowMode}
+            colorMode={colorMode} setColorMode={setColorMode}
+            palette={palette}
+            pulse={pulse} setPulse={setPulse}
 
             playlistFiles={playlistFiles}
             setPlaylistFiles={setPlaylistFiles}

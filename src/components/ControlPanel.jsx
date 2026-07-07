@@ -9,6 +9,12 @@ const fitModes = [
   { key: 'stretch', label: '🔲 Fill' },
 ]
 
+const colorModes = [
+  { key: 'manual', label: '✏️ Manual' },
+  { key: 'rainbow', label: '🌈 Rainbow' },
+  { key: 'auto', label: '🎨 Auto' },
+]
+
 export default function ControlPanel({
   audioFile, setAudioFile,
   bgFile, setBgFile,
@@ -22,7 +28,9 @@ export default function ControlPanel({
   albumBrightness, setAlbumBrightness,
   volume, setVolume,
   onPiP, inPiP, pipSupported,
-  rainbowMode, setRainbowMode,
+  colorMode, setColorMode,
+  palette,
+  pulse, setPulse,
 
   playlistFiles, setPlaylistFiles,
   playlistMode, setPlaylistMode,
@@ -139,21 +147,45 @@ export default function ControlPanel({
 
       {/* EQ */}
       <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-3 border border-white/10">
-        <label className="text-xs text-white/70">🎨 EQ color</label>
-        <div className="flex items-center gap-3">
-          <input type="color" value={eqColor}
-            onChange={(e) => setEqColor(e.target.value)}
-            className="w-10 h-10 rounded-lg cursor-pointer border-0 bg-transparent [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0" />
-          <span className="text-xs text-white/50 font-mono">{eqColor.toUpperCase()}</span>
-          <button className={`${btn} text-xs py-1 px-2 ${rainbowMode ? 'bg-cyan-500/40 text-cyan-200 border border-cyan-400/30' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
-            onClick={() => setRainbowMode(!rainbowMode)}>
-            🌈
-          </button>
+        <label className="text-xs text-white/70">🎨 Color</label>
+        <div className="flex gap-1 mb-1">
+          {colorModes.map(({ key, label }) => {
+            const disabled = key === 'auto' && !palette?.length
+            return (
+              <button key={key}
+                disabled={disabled}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer flex-1
+                  ${disabled ? 'bg-white/5 text-white/30 cursor-not-allowed' :
+                    colorMode === key ? 'bg-cyan-500/40 text-cyan-200 border border-cyan-400/30' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+                onClick={() => setColorMode(key)}>
+                {label}
+              </button>
+            )
+          })}
         </div>
+        {colorMode === 'auto' && palette?.length > 0 && (
+          <div className="flex gap-1 mb-1">
+            {palette.map((c, i) => (
+              <div key={i} className="w-5 h-5 rounded-full border border-white/10" style={{ backgroundColor: c }} />
+            ))}
+          </div>
+        )}
+        {colorMode === 'manual' && (
+          <div className="flex items-center gap-3">
+            <input type="color" value={eqColor}
+              onChange={(e) => setEqColor(e.target.value)}
+              className="w-10 h-10 rounded-lg cursor-pointer border-0 bg-transparent [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0" />
+            <span className="text-xs text-white/50 font-mono">{eqColor.toUpperCase()}</span>
+          </div>
+        )}
         <label className="text-xs text-white/70">✨ Glow: {Math.round(eqIntensity * 100)}%</label>
         <input type="range" min="0.1" max="2.5" step="0.01" value={eqIntensity}
           onChange={(e) => setEqIntensity(parseFloat(e.target.value))}
           className={slider} />
+        <button className={`${btn} text-xs py-1 ${pulse ? 'bg-cyan-500/40 text-cyan-200 border border-cyan-400/30' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+          onClick={() => setPulse(!pulse)}>
+          Pulse {pulse ? '💨' : '⏸'}
+        </button>
       </div>
 
       {/* Playback */}
