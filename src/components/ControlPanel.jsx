@@ -22,6 +22,7 @@ export default function ControlPanel({
   albumBrightness, setAlbumBrightness,
   volume, setVolume,
   onPiP, inPiP, pipSupported,
+  rainbowMode, setRainbowMode,
 
   playlistFiles, setPlaylistFiles,
   playlistMode, setPlaylistMode,
@@ -36,9 +37,9 @@ export default function ControlPanel({
   const hasPlaylist = playlistFiles && playlistFiles.length > 0
 
   return (
-    <div className="flex flex-col gap-3 max-w-xs max-h-screen overflow-y-auto pb-16">
+    <div className="flex flex-col gap-2 max-w-xs max-h-screen overflow-y-auto pb-8 custom-scrollbar">
       {/* Uploads */}
-      <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-4 border border-white/10">
+      <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-3 border border-white/10">
         <label className="flex items-center gap-2 text-xs text-white/70">
           <span className="shrink-0">🎵 Audio</span>
           <input ref={audioRef} type="file" accept="audio/mp3,audio/wav,audio/mpeg" className="hidden"
@@ -69,7 +70,7 @@ export default function ControlPanel({
       </div>
 
       {/* Playlist */}
-      <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-4 border border-white/10">
+      <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-3 border border-white/10">
         <div className="flex items-center justify-between">
           <span className="text-xs text-white/70">📋 Playlist</span>
           <div className="flex gap-1">
@@ -108,7 +109,7 @@ export default function ControlPanel({
 
       {/* Background */}
       {bgFile && (
-        <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-4 border border-white/10">
+        <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-3 border border-white/10">
           <label className="text-xs text-white/70">☀️ Bg: {Math.round(bgBrightness * 100)}%</label>
           <input type="range" min="0.05" max="1" step="0.01" value={bgBrightness}
             onChange={(e) => setBgBrightness(parseFloat(e.target.value))}
@@ -128,7 +129,7 @@ export default function ControlPanel({
 
       {/* Album */}
       {albumFile && (
-        <div className="bg-black/60 backdrop-blur-md rounded-xl p-4 border border-white/10">
+        <div className="bg-black/60 backdrop-blur-md rounded-xl p-3 border border-white/10">
           <label className="text-xs text-white/70">💿 Album: {Math.round(albumBrightness * 100)}%</label>
           <input type="range" min="0.05" max="1.5" step="0.01" value={albumBrightness}
             onChange={(e) => setAlbumBrightness(parseFloat(e.target.value))}
@@ -137,13 +138,17 @@ export default function ControlPanel({
       )}
 
       {/* EQ */}
-      <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-4 border border-white/10">
+      <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-3 border border-white/10">
         <label className="text-xs text-white/70">🎨 EQ color</label>
         <div className="flex items-center gap-3">
           <input type="color" value={eqColor}
             onChange={(e) => setEqColor(e.target.value)}
             className="w-10 h-10 rounded-lg cursor-pointer border-0 bg-transparent [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0" />
           <span className="text-xs text-white/50 font-mono">{eqColor.toUpperCase()}</span>
+          <button className={`${btn} text-xs py-1 px-2 ${rainbowMode ? 'bg-cyan-500/40 text-cyan-200 border border-cyan-400/30' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+            onClick={() => setRainbowMode(!rainbowMode)}>
+            🌈
+          </button>
         </div>
         <label className="text-xs text-white/70">✨ Glow: {Math.round(eqIntensity * 100)}%</label>
         <input type="range" min="0.1" max="2.5" step="0.01" value={eqIntensity}
@@ -152,7 +157,7 @@ export default function ControlPanel({
       </div>
 
       {/* Playback */}
-      <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-4 border border-white/10">
+      <div className="flex flex-col gap-2 bg-black/60 backdrop-blur-md rounded-xl p-3 border border-white/10">
         <div className="flex gap-2 items-center">
           <button
             className={`${btn} ${playing ? 'bg-red-500/80 hover:bg-red-500' : 'bg-green-500/80 hover:bg-green-500'} text-white flex-1`}

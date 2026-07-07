@@ -14,6 +14,7 @@ export default function App() {
   const [eqIntensity, setEqIntensity] = useState(1.2)
   const [albumBrightness, setAlbumBrightness] = useState(1.0)
   const [volume, setVolume] = useState(0.8)
+  const [rainbowMode, setRainbowMode] = useState(false)
 
   // playlist
   const [playlistFiles, setPlaylistFiles] = useState(null)
@@ -40,9 +41,23 @@ export default function App() {
   const pipSupported = useMemo(() => 'requestPictureInPicture' in HTMLVideoElement.prototype, [])
 
   const handleHide = useCallback(() => {
-    setUiPhase('hiding')
-    setTimeout(() => setUiPhase('hidden'), 3000)
+    setUiPhase('show-btn')
   }, [])
+
+  const handleShowClick = useCallback(() => {
+    setUiPhase('visible')
+  }, [])
+
+  const handleHoverShow = useCallback(() => {
+    if (uiPhase === 'hidden') setUiPhase('show-btn')
+  }, [uiPhase])
+
+  // auto-hide show button after 3s
+  useEffect(() => {
+    if (uiPhase !== 'show-btn') return
+    const t = setTimeout(() => setUiPhase('hidden'), 3000)
+    return () => clearTimeout(t)
+  }, [uiPhase])
 
   const playTrack = useCallback((idx) => {
     if (!playlistUrls.length) return
@@ -156,16 +171,11 @@ export default function App() {
         eqColor={eqColor}
         eqIntensity={eqIntensity}
         albumBrightness={albumBrightness}
+        rainbowMode={rainbowMode}
         onCanvasReady={(c) => { canvasRef.current = c }}
       />
 
-      <div
-        style={{
-          opacity: uiPhase === 'visible' ? 1 : 0,
-          transition: `opacity ${uiPhase === 'hiding' ? '3000ms' : '300ms'} ease`,
-          pointerEvents: uiPhase === 'visible' ? 'auto' : 'none',
-        }}
-      >
+      {uiPhase === 'visible' && (
         <div className="fixed top-0 left-0 z-10 p-4">
           <ControlPanel
             audioFile={audioFile} setAudioFile={setAudioFile}
@@ -184,6 +194,7 @@ export default function App() {
             onPiP={handlePiP}
             inPiP={inPiP}
             pipSupported={pipSupported}
+            rainbowMode={rainbowMode} setRainbowMode={setRainbowMode}
 
             playlistFiles={playlistFiles}
             setPlaylistFiles={setPlaylistFiles}
@@ -194,12 +205,21 @@ export default function App() {
             trackNames={trackNames}
           />
         </div>
-      </div>
+      )}
 
-      {uiPhase === 'hidden' && (
+      <button
+        className={`fixed top-4 left-4 z-20 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-white/20 bg-black/50 backdrop-blur-md transition-all duration-300 cursor-pointer ${
+          uiPhase === 'show-btn' ? 'opacity-100 pointer-events-auto text-white/70 hover:text-white hover:bg-white/15' : 'opacity-0 pointer-events-none text-white/30'
+        }`}
+        onClick={handleShowClick}
+      >
+        ☰ Show Controls
+      </button>
+
+      {uiPhase !== 'visible' && (
         <div
-          className="fixed top-0 left-0 w-16 h-full z-10 cursor-default"
-          onMouseEnter={() => setUiPhase('visible')}
+          className="fixed top-0 left-0 w-14 h-full z-15 cursor-default"
+          onMouseEnter={handleHoverShow}
         />
       )}
     </>

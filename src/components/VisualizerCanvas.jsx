@@ -69,9 +69,8 @@ function Album({ url, playing, brightness }) {
   )
 }
 
-function Ring({ analyserRef, freqDataRef, playing, color, intensity }) {
+function Ring({ analyserRef, freqDataRef, playing, color, intensity, rainbowMode }) {
   const ref = useRef()
-  const matRef = useRef()
   const curH = useRef(new Float32Array(N))
   const m4 = useMemo(() => new THREE.Matrix4(), [])
   const p = useMemo(() => new THREE.Vector3(), [])
@@ -79,15 +78,6 @@ function Ring({ analyserRef, freqDataRef, playing, color, intensity }) {
   const q = useMemo(() => new THREE.Quaternion(), [])
   const zAxis = useMemo(() => new THREE.Vector3(0, 0, 1), [])
   const tmpC = useMemo(() => new THREE.Color(), [])
-
-  useLayoutEffect(() => {
-    if (!matRef.current) return
-    tmpC.set(color)
-    tmpC.r *= intensity
-    tmpC.g *= intensity
-    tmpC.b *= intensity
-    matRef.current.color.copy(tmpC)
-  }, [color, intensity])
 
   useLayoutEffect(() => {
     const m = ref.current
@@ -99,11 +89,14 @@ function Ring({ analyserRef, freqDataRef, playing, color, intensity }) {
       s.set(0.01, TW, TD)
       m4.compose(p, q, s)
       m.setMatrixAt(i, m4)
+      tmpC.set(color)
+      m.setColorAt(i, tmpC)
     }
     m.instanceMatrix.needsUpdate = true
+    m.instanceColor.needsUpdate = true
   }, [])
 
-  useFrame(() => {
+  useFrame((state) => {
     const m = ref.current
     if (!m) return
     const data = freqDataRef.current
@@ -112,11 +105,12 @@ function Ring({ analyserRef, freqDataRef, playing, color, intensity }) {
     if (playing && anal && data) anal.getByteFrequencyData(data)
 
     const lerp = playing ? 0.3 : 0.06
+    const time = state.clock.elapsedTime
 
     for (let i = 0; i < N; i++) {
       const a = (i / N) * Math.PI * 2
       const target = playing
-        ? (data[Math.floor((i / N) * data.length)] / 255) * MAX_BAR
+        ? (data[Math.min(Math.floor(Math.pow(i / N, 0.7) * data.length * 0.6), data.length - 1)] / 255) * MAX_BAR
         : 0.005
       curH.current[i] += (target - curH.current[i]) * lerp
       const h = Math.max(0.005, curH.current[i])
@@ -127,30 +121,46 @@ function Ring({ analyserRef, freqDataRef, playing, color, intensity }) {
       s.set(h, TW, TD)
       m4.compose(p, q, s)
       m.setMatrixAt(i, m4)
+
+      if (rainbowMode) {
+        const hue = ((i / N) + time * 0.04) % 1
+        tmpC.setHSL(hue, 0.9, 0.5 + (h / MAX_BAR) * 0.3)
+      } else {
+        tmpC.set(color)
+      }
+      tmpC.r *= intensity
+      tmpC.g *= intensity
+      tmpC.b *= intensity
+      m.setColorAt(i, tmpC)
     }
     m.instanceMatrix.needsUpdate = true
+    m.instanceColor.needsUpdate = true
   })
 
   return (
     <instancedMesh ref={ref} args={[null, null, N]} frustumCulled={false}>
       <boxGeometry args={[1, 1, 1]} />
-      <meshBasicMaterial ref={matRef} toneMapped={false} />
+      <meshBasicMaterial toneMapped={false} />
     </instancedMesh>
   )
 }
 
-function GlowRing({ color, intensity }) {
+function GlowRing({ color, intensity, rainbowMode }) {
   const ref = useRef()
   const tmpC = useMemo(() => new THREE.Color(), [])
 
   useLayoutEffect(() => {
     if (!ref.current) return
-    tmpC.set(color)
+    if (rainbowMode) {
+      tmpC.setHSL(0, 0.9, 0.5)
+    } else {
+      tmpC.set(color)
+    }
     tmpC.r *= intensity
     tmpC.g *= intensity
     tmpC.b *= intensity
     ref.current.material.color.copy(tmpC)
-  }, [color, intensity])
+  }, [color, intensity, rainbowMode])
 
   return (
     <mesh ref={ref} position={[0, 0, 0.1]}>
@@ -160,13 +170,13 @@ function GlowRing({ color, intensity }) {
   )
 }
 
-function Scene({ bgUrl, albumUrl, analyserRef, freqDataRef, playing, bgBrightness, bgFit, eqColor, eqIntensity, albumBrightness }) {
+function Scene({ bgUrl, albumUrl, analyserRef, freqDataRef, playing, bgBrightness, bgFit, eqColor, eqIntensity, albumBrightness, rainbowMode }) {
   return (
     <>
       {bgUrl && <Bg url={bgUrl} brightness={bgBrightness} fit={bgFit} />}
-      <GlowRing color={eqColor} intensity={eqIntensity} />
+      <GlowRing color={eqColor} intensity={eqIntensity} rainbowMode={rainbowMode} />
       {albumUrl && <Album url={albumUrl} playing={playing} brightness={albumBrightness} />}
-      <Ring analyserRef={analyserRef} freqDataRef={freqDataRef} playing={playing} color={eqColor} intensity={eqIntensity} />
+      <Ring analyserRef={analyserRef} freqDataRef={freqDataRef} playing={playing} color={eqColor} intensity={eqIntensity} rainbowMode={rainbowMode} />
       <EffectComposer>
         <Bloom intensity={2.0} luminanceThreshold={0} luminanceSmoothing={0.1} mipmapBlur />
       </EffectComposer>
@@ -174,7 +184,7 @@ function Scene({ bgUrl, albumUrl, analyserRef, freqDataRef, playing, bgBrightnes
   )
 }
 
-export default function VisualizerCanvas({ bgUrl, albumUrl, analyserRef, freqDataRef, playing, bgBrightness, bgFit, eqColor, eqIntensity, albumBrightness, onCanvasReady }) {
+export default function VisualizerCanvas({ bgUrl, albumUrl, analyserRef, freqDataRef, playing, bgBrightness, bgFit, eqColor, eqIntensity, albumBrightness, rainbowMode, onCanvasReady }) {
   return (
     <Canvas
       onCreated={(state) => onCanvasReady?.(state.gl.domElement)}
@@ -182,7 +192,7 @@ export default function VisualizerCanvas({ bgUrl, albumUrl, analyserRef, freqDat
       style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0 }}
     >
       <Suspense fallback={null}>
-        <Scene bgUrl={bgUrl} albumUrl={albumUrl} analyserRef={analyserRef} freqDataRef={freqDataRef} playing={playing} bgBrightness={bgBrightness} bgFit={bgFit} eqColor={eqColor} eqIntensity={eqIntensity} albumBrightness={albumBrightness} />
+        <Scene bgUrl={bgUrl} albumUrl={albumUrl} analyserRef={analyserRef} freqDataRef={freqDataRef} playing={playing} bgBrightness={bgBrightness} bgFit={bgFit} eqColor={eqColor} eqIntensity={eqIntensity} albumBrightness={albumBrightness} rainbowMode={rainbowMode} />
       </Suspense>
     </Canvas>
   )
